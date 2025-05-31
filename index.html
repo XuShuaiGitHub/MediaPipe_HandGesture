@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>MediaPipe手势识别 - 优化版</title>
+    <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 15px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            color: #007f8b;
+            font-size: 1.8rem;
+            margin: 10px 0;
+            background: linear-gradient(90deg, #007f8b, #00b4cc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .demo-section {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .demo-section:hover {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            margin: 0 0 15px;
+            color: #007f8b;
+            display: flex;
+            align-items: center;
+        }
+
+        h2 i {
+            margin-right: 10px;
+            font-size: 1.6rem;
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 1rem;
+            margin: 0 0 20px;
+            text-align: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .image-demos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .detectOnClick {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            aspect-ratio: 4/3;
+            background: #f8f9fa;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .detectOnClick:hover {
+            transform: scale(1.02);
+        }
+
+        .detectOnClick img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .detectOnClick p {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 15px;
+            background: rgba(0, 127, 139, 0.9);
+            color: white;
+            margin: 0;
+            font-size: 0.9rem;
+            text-align: center;
+            z-index: 2;
+            backdrop-filter: blur(4px);
+            line-height: 1.5;
+        }
+
+        .video-demo {
+            margin-top: 20px;
+        }
+
+        .videoView {
+            position: relative;
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            aspect-ratio: 16/9;
+            background: #000;
+        }
+
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: rotateY(180deg);
+            background: #000;
+        }
+
+        #output_canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            transform: rotateY(180deg);
+        }
+
+        #gesture_output {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, #007f8b 0%, #00b4cc 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+            font-size: 1.1rem;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            white-space: pre-line;
+            line-height: 1.6;
+            box-shadow: 0 4px 12px rgba(0, 127, 139, 0.3);
+        }
+
+        .webcam-control {
+            text-align: center;
+            margin: 20px 0 10px;
+        }
+
+        .mdc-button {
+            --mdc-typography-button-text-transform: none;
+            font-weight: 600;
+            border-radius: 28px;
+            padding: 0 28px;
+            height: 48px;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .mdc-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+        }
+
+        .loading-container {
+            text-align: center;
+            padding: 40px 30px;
+            border-radius: 16px;
+            background: white;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            margin: 30px 0;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 20px;
+            border: 5px solid rgba(0, 127, 139, 0.2);
+            border-top: 5px solid #007f8b;
+            border-radius: 50%;
+            animation: spin 1.2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-size: 1.2rem;
+            color: #007f8b;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .progress-text {
+            font-size: 1rem;
+            color: #666;
+            margin-top: 10px;
+            max-width: 500px;
+            margin: 10px auto 0;
+        }
+
+        .retry-button {
+            margin-top: 20px;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1rem;
+            box-shadow: 0 4px 10px rgba(211, 47, 47, 0.15);
+        }
+
+        .tips {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+
+        .tips h3 {
+            color: #007f8b;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .tips ul {
+            padding-left: 20px;
+        }
+
+        .tips li {
+            margin-bottom: 8px;
+        }
+
+        .mobile-warning {
+            background: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            border-radius: 0 8px 8px 0;
+            margin: 15px 0;
+            display: none;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .image-demos {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            h2 {
+                font-size: 1.2rem;
+            }
+
+            .mdc-button {
+                width: 100%;
+                max-width: 320px;
+            }
+
+            .demo-section {
+                padding: 15px;
+            }
+
+            .mobile-warning {
+                display: block;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            header {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 1.3rem;
+            }
+
+            .subtitle {
+                font-size: 0.9rem;
+            }
+
+            .loading-container {
+                padding: 30px 20px;
+            }
+
+            #gesture_output {
+                font-size: 1rem;
+                min-height: 80px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>MediaPipe 手势识别系统</h1>
+            <p class="subtitle">优化版 - 解决模型加载问题，提升移动端体验</p>
+        </header>
+
+        <div class="mobile-warning">
+            <strong>移动端提示：</strong> 首次加载模型可能需要较长时间（约15-30秒），请保持网络连接稳定。
+        </div>
+
+        <div class="tips">
+            <h3>使用提示：</h3>
+            <ul>
+                <li>确保在光线充足的环境下使用，手势清晰可见</li>
+                <li>将手放置在摄像头前约30-50厘米处</li>
+                <li>尝试常见手势如👍、✌️、👌、🤙等</li>
+                <li>模型加载需要网络连接，首次使用可能需要10-30秒</li>
+                <li>在移动端使用建议连接WiFi以获得更好体验</li>
+            </ul>
+        </div>
+
+        <section id="demos" class="invisible">
+            <div class="demo-section">
+                <h2><span>📸</span> 图片手势识别</h2>
+                <p class="info-text">点击下方图片识别手势，系统将分析手势类型并标记手部关键点</p>
+
+                <div class="image-demos">
+                    <div class="detectOnClick">
+                        <img src="https://assets.codepen.io/9177687/idea-gcbe74dc69_1920.jpg" crossorigin="anonymous"
+                            title="点击识别手势"
+                            onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=600&q=80';" />
+                        <p class="classification removed"></p>
+                    </div>
+
+                    <div class="detectOnClick">
+                        <img src="https://assets.codepen.io/9177687/thumbs-up-ga409ddbd6_1.png" crossorigin="anonymous"
+                            title="点击识别手势"
+                            onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=600&q=80';" />
+                        <p class="classification removed"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="demo-section video-demo">
+                <h2><span>🎥</span> 实时摄像头手势识别</h2>
+                <p class="info-text">启用摄像头后，在镜头前做手势进行实时识别分析</p>
+
+                <div id="liveView">
+                    <div class="videoView">
+                        <video id="webcam" autoplay playsinline></video>
+                        <canvas class="output_canvas" id="output_canvas"></canvas>
+                    </div>
+
+                    <p id='gesture_output' class="output">等待手势识别...</p>
+
+                    <div class="webcam-control">
+                        <button id="webcamButton" class="mdc-button mdc-button--raised">
+                            <span class="mdc-button__ripple"></span>
+                            <span class="mdc-button__label">启用摄像头</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="loading" class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">正在初始化手势识别系统</div>
+            <div id="progressText" class="progress-text">加载中，请稍候...（首次加载可能需要30秒）</div>
+            <button id="retryButton" class="mdc-button mdc-button--outlined retry-button" style="display: none;">
+                <span class="mdc-button__ripple"></span>
+                <span class="mdc-button__label">重新加载模型</span>
+            </button>
+        </div>
+
+        <div id="errorContainer" style="display: none;"></div>
+    </div>
+
+    <footer>
+        <p>基于MediaPipe手势识别技术 | 优化适配移动端 | 解决模型加载问题</p>
+    </footer>
+
+    <script type="module">
+        // 引入MediaPipe手势识别库
+        import {
+            GestureRecognizer,
+            FilesetResolver,
+            DrawingUtils
+        } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+
+        // DOM元素引用
+        const demosSection = document.getElementById("demos");
+        const loadingElement = document.getElementById("loading");
+        const progressText = document.getElementById("progressText");
+        const retryButton = document.getElementById("retryButton");
+        const errorContainer = document.getElementById("errorContainer");
+
+        // 全局变量
+        let gestureRecognizer;
+        let runningMode = "IMAGE";
+        let webcamRunning = false;
+        let loadAttempts = 0;
+        const MAX_RETRIES = 3;
+
+        // 显示错误信息
+        function showError(message) {
+            errorContainer.style.display = 'block';
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <strong>错误:</strong> ${message}
+                    <p style="margin-top: 10px;">请检查网络连接后重试。如果问题持续存在，请确保您可以访问Google服务。</p>
+                </div>
+            `;
+        }
+
+        // 更新加载状态
+        function updateProgress(message) {
+            progressText.textContent = message;
+        }
+
+        // 创建手势识别器（带多CDN回退机制）
+        const createGestureRecognizer = async () => {
+            try {
+                loadAttempts++;
+                updateProgress(`正在加载手势识别模型 (尝试 ${loadAttempts}/${MAX_RETRIES})...`);
+
+                // 1. 尝试从主要CDN加载基础模块
+                let vision;
+                try {
+                    vision = await FilesetResolver.forVisionTasks(
+                        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+                    );
+                } catch (e) {
+                    console.warn("主要CDN加载失败，尝试备用CDN...");
+                    updateProgress("主要CDN加载失败，尝试备用CDN...");
+                    // 尝试备用CDN
+                    vision = await FilesetResolver.forVisionTasks(
+                        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+                    );
+                }
+
+                updateProgress('正在加载手势识别模型...');
+
+                // 2. 尝试多个模型源（已修复模型地址）
+                const modelSources = [
+                    "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
+                    "https://storage.googleapis.com/mediapipe-assets/gesture_recognizer.task"  // 有效的备用地址
+                ];
+
+                let modelLoaded = false;
+
+                for (let i = 0; i < modelSources.length; i++) {
+                    try {
+                        updateProgress(`尝试从源 ${i + 1}/${modelSources.length} 加载模型...`);
+                        gestureRecognizer = await GestureRecognizer.createFromOptions(vision, {
+                            baseOptions: {
+                                modelAssetPath: modelSources[i],
+                                delegate: "GPU"
+                            },
+                            runningMode: runningMode
+                        });
+                        modelLoaded = true;
+                        break;
+                    } catch (modelError) {
+                        console.error(`模型源 ${i + 1} 加载失败:`, modelError);
+                        if (i < modelSources.length - 1) {
+                            updateProgress(`模型源 ${i + 1} 加载失败，尝试下一个...`);
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    }
+                }
+
+                if (!modelLoaded) {
+                    throw new Error("所有模型源加载失败");
+                }
+
+                // 加载完成
+                updateProgress('加载完成！系统准备就绪');
+
+                // 短暂显示加载完成
+                setTimeout(() => {
+                    // 隐藏加载提示，显示主界面
+                    demosSection.classList.remove("invisible");
+                    loadingElement.style.display = "none";
+                }, 1000);
+
+                // 初始化按钮
+                const enableWebcamButton = document.getElementById("webcamButton");
+                mdc.ripple.MDCRipple.attachTo(enableWebcamButton);
+
+            } catch (error) {
+                console.error("手势识别器加载错误:", error);
+
+                if (loadAttempts < MAX_RETRIES) {
+                    updateProgress(`加载失败，将在3秒后重试 (${loadAttempts}/${MAX_RETRIES})...`);
+                    setTimeout(createGestureRecognizer, 3000);
+                } else {
+                    updateProgress("加载失败，请检查网络连接");
+                    retryButton.style.display = 'block';
+                    showError("手势识别模型加载失败。请确保您可以访问Google服务或使用VPN。");
+                }
+            }
+        };
+
+        // 重试按钮事件
+        retryButton.addEventListener('click', () => {
+            retryButton.style.display = 'none';
+            errorContainer.style.display = 'none';
+            loadAttempts = 0;
+            createGestureRecognizer();
+        });
+
+        // 初始化手势识别器
+        createGestureRecognizer();
+
+        /********************************************************************
+        // 功能1: 检测图片中的手势
+        ********************************************************************/
+        const imageContainers = document.getElementsByClassName("detectOnClick");
+        for (let i = 0; i < imageContainers.length; i++) {
+            imageContainers[i].children[0].addEventListener("click", handleClick);
+        }
+
+        async function handleClick(event) {
+            if (!gestureRecognizer) {
+                alert("手势识别器尚未加载完成，请稍候");
+                return;
+            }
+
+            if (runningMode === "VIDEO") {
+                runningMode = "IMAGE";
+                await gestureRecognizer.setOptions({ runningMode: "IMAGE" });
+            }
+
+            // 清除之前的标记
+            const allCanvas = event.target.parentNode.getElementsByClassName("canvas");
+            for (let i = allCanvas.length - 1; i >= 0; i--) {
+                allCanvas[i].parentNode.removeChild(allCanvas[i]);
+            }
+
+            // 显示加载状态
+            const p = event.target.parentNode.getElementsByClassName("classification")[0];
+            p.classList.remove("removed");
+            p.innerHTML = "分析中...<br><div style='margin-top:5px;font-size:0.8em'>正在识别手势</div>";
+
+            try {
+                const results = gestureRecognizer.recognize(event.target);
+
+                // 显示结果
+                if (results.gestures.length > 0) {
+                    const categoryName = results.gestures[0][0].categoryName;
+                    const categoryScore = parseFloat(results.gestures[0][0].score * 100).toFixed(2);
+                    const handedness = results.handednesses[0][0].displayName;
+
+                    p.innerHTML = `识别结果: ${categoryName}<br>置信度: ${categoryScore}%<br>使用手: ${handedness}`;
+
+                    // 创建画布绘制手部标记
+                    const canvas = document.createElement("canvas");
+                    canvas.setAttribute("class", "canvas");
+                    canvas.width = event.target.naturalWidth;
+                    canvas.height = event.target.naturalHeight;
+                    canvas.style.cssText = `
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        height: 100%;
+                        pointer-events: none;
+                    `;
+
+                    event.target.parentNode.appendChild(canvas);
+                    const canvasCtx = canvas.getContext("2d");
+                    const drawingUtils = new DrawingUtils(canvasCtx);
+
+                    // 绘制手部标记
+                    for (const landmarks of results.landmarks) {
+                        drawingUtils.drawConnectors(landmarks, GestureRecognizer.HAND_CONNECTIONS, {
+                            color: "#00FF00",
+                            lineWidth: 5
+                        });
+                        drawingUtils.drawLandmarks(landmarks, {
+                            color: "#FF0000",
+                            lineWidth: 1
+                        });
+                    }
+                } else {
+                    p.innerHTML = "未识别到手势<br><div style='font-size:0.8em'>请尝试其他手势</div>";
+                }
+            } catch (error) {
+                console.error("图片识别错误:", error);
+                p.innerHTML = "识别失败<br><div style='font-size:0.8em'>请重试</div>";
+            }
+        }
+
+        /********************************************************************
+        // 功能2: 摄像头实时手势检测
+        ********************************************************************/
+        const video = document.getElementById("webcam");
+        const canvasElement = document.getElementById("output_canvas");
+        const canvasCtx = canvasElement.getContext("2d");
+        const gestureOutput = document.getElementById("gesture_output");
+        const webcamButton = document.getElementById("webcamButton");
+
+        // 检查浏览器是否支持摄像头
+        function hasGetUserMedia() {
+            return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+        }
+
+        // 添加摄像头启用按钮事件
+        if (hasGetUserMedia()) {
+            webcamButton.addEventListener('click', toggleWebcam);
+        } else {
+            console.warn("您的浏览器不支持摄像头访问");
+            webcamButton.disabled = true;
+            webcamButton.querySelector('.mdc-button__label').textContent = "浏览器不支持摄像头";
+            showError("您的浏览器不支持摄像头功能，请使用Chrome、Edge或Firefox等现代浏览器。");
+        }
+
+        // 切换摄像头状态
+        async function toggleWebcam() {
+            if (!gestureRecognizer) {
+                alert("手势识别器尚未加载完成，请稍候");
+                return;
+            }
+
+            if (webcamRunning) {
+                // 关闭摄像头
+                stopWebcam();
+                webcamButton.querySelector('.mdc-button__label').textContent = "启用摄像头";
+                gestureOutput.textContent = "摄像头已关闭";
+            } else {
+                // 启用摄像头
+                try {
+                    webcamButton.querySelector('.mdc-button__label').textContent = "正在启动...";
+                    await startWebcam();
+                    webcamButton.querySelector('.mdc-button__label').textContent = "关闭摄像头";
+                } catch (error) {
+                    console.error("摄像头启用失败:", error);
+                    showError(`摄像头启用失败: ${error.message}`);
+                    webcamButton.querySelector('.mdc-button__label').textContent = "启用摄像头";
+                }
+            }
+        }
+
+        // 启动摄像头
+        async function startWebcam() {
+            try {
+                // 请求摄像头访问权限
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
+
+                video.srcObject = stream;
+
+                // 等待视频数据加载
+                await new Promise((resolve) => {
+                    video.onloadeddata = resolve;
+                });
+
+                // 设置canvas尺寸与视频一致
+                canvasElement.width = video.videoWidth;
+                canvasElement.height = video.videoHeight;
+
+                // 开始预测
+                webcamRunning = true;
+                predictWebcam();
+            } catch (err) {
+                console.error("摄像头访问错误:", err);
+                if (err.name === 'NotAllowedError') {
+                    showError("摄像头访问被拒绝。请检查浏览器权限设置并允许访问摄像头。");
+                } else if (err.name === 'NotFoundError') {
+                    showError("未找到可用的摄像头设备。");
+                } else if (err.name === 'NotReadableError') {
+                    showError("摄像头设备已被占用，请关闭其他使用摄像头的应用。");
+                } else {
+                    showError(`无法访问摄像头: ${err.message}`);
+                }
+                throw err;
+            }
+        }
+
+        // 停止摄像头
+        function stopWebcam() {
+            webcamRunning = false;
+            if (video.srcObject) {
+                const tracks = video.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+            }
+
+            // 清除画布
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        }
+
+        let lastVideoTime = -1;
+        let results = undefined;
+
+        // 实时手势识别预测
+        async function predictWebcam() {
+            if (!webcamRunning) return;
+
+            try {
+                // 确保手势识别器设置为视频模式
+                if (runningMode === "IMAGE") {
+                    runningMode = "VIDEO";
+                    await gestureRecognizer.setOptions({ runningMode: "VIDEO" });
+                }
+
+                // 获取当前时间戳
+                let nowInMs = Date.now();
+
+                // 仅当视频帧更新时进行识别
+                if (video.currentTime !== lastVideoTime) {
+                    lastVideoTime = video.currentTime;
+                    results = gestureRecognizer.recognizeForVideo(video, nowInMs);
+                }
+
+                // 清除画布
+                canvasCtx.save();
+                canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                const drawingUtils = new DrawingUtils(canvasCtx);
+
+                // 绘制检测结果
+                if (results && results.landmarks) {
+                    for (const landmarks of results.landmarks) {
+                        drawingUtils.drawConnectors(landmarks, GestureRecognizer.HAND_CONNECTIONS, {
+                            color: "#00FF00",
+                            lineWidth: 5
+                        });
+                        drawingUtils.drawLandmarks(landmarks, {
+                            color: "#FF0000",
+                            lineWidth: 2
+                        });
+                    }
+                }
+                canvasCtx.restore();
+
+                // 显示手势识别结果
+                if (results && results.gestures && results.gestures.length > 0) {
+                    const categoryName = results.gestures[0][0].categoryName;
+                    const categoryScore = parseFloat(results.gestures[0][0].score * 100).toFixed(2);
+                    const handedness = results.handednesses[0][0].displayName;
+                    gestureOutput.innerHTML = `识别结果: <strong>${categoryName}</strong><br>置信度: ${categoryScore}%<br>使用手: ${handedness}`;
+                } else {
+                    gestureOutput.innerHTML = "未检测到手势<br><small>请将手放在摄像头前</small>";
+                }
+            } catch (error) {
+                console.error("手势识别错误:", error);
+                if (webcamRunning) {
+                    gestureOutput.innerHTML = "识别出错<br><small>请重试</small>";
+                }
+            }
+
+            // 继续预测
+            if (webcamRunning) {
+                window.requestAnimationFrame(predictWebcam);
+            }
+        }
+    </script>
+</body>
+
+</html>
