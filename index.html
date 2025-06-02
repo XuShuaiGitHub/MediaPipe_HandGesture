@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>手势控制幻灯片系统</title>
+    <title>手势控制幻灯片系统 - 持续翻页功能</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
@@ -278,8 +278,9 @@
             color: #4facfe;
             border: 2px solid #4facfe;
             border-radius: 50px;
-            padding: 12px 30px;
-            font-size: 1.1rem;
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            line-height: 1.2rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -287,15 +288,6 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-        }
-
-        .nav-btn .material-icons {
-            font-size: 1.5rem;
-            vertical-align: middle;
-        }
-
-        .nav-btn:hover {
-            background: rgba(79, 172, 254, 0.4);
         }
 
         .gesture-effect {
@@ -386,6 +378,47 @@
             font-size: 1.1rem;
         }
 
+        .continuous-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 126, 95, 1);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .continuous-indicator.active {
+            opacity: 1;
+        }
+
+        .continuous-indicator .material-icons {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
         footer {
             text-align: center;
             padding: 30px 0 20px;
@@ -417,6 +450,12 @@
             .slide-content {
                 font-size: 1.2rem;
             }
+
+            .continuous-indicator {
+                bottom: 15px;
+                font-size: 1rem;
+                padding: 10px 20px;
+            }
         }
 
         @media (max-width: 600px) {
@@ -431,6 +470,15 @@
             .camera-view {
                 height: 300px;
             }
+
+            .gesture-symbol {
+                font-size: 3rem;
+                height: 60px;
+            }
+
+            .gesture-card h3 {
+                font-size: 1.2rem;
+            }
         }
     </style>
 </head>
@@ -438,8 +486,13 @@
 <body>
     <header>
         <h1>手势控制幻灯片系统</h1>
-        <p class="subtitle">无需触摸设备，用手势控制您的演示文稿</p>
+        <p class="subtitle">持续手势翻页功能 - 保持手势自动连续翻页</p>
     </header>
+
+    <div class="continuous-indicator" id="continuousIndicator">
+        <i class="material-icons">autorenew</i>
+        <span>持续翻页中...</span>
+    </div>
 
     <div class="container">
         <div class="slideshow-container">
@@ -449,10 +502,11 @@
 
             <div class="slideshow">
                 <div class="slide active">
-                    <h2>欢迎使用手势控制系统</h2>
+                    <h2>持续手势翻页功能</h2>
                     <div class="slide-content">
-                        <p>这是一个创新的演示工具，让您通过简单的手势控制幻灯片播放。</p>
-                        <p>请启用摄像头并尝试各种手势来体验这项技术！</p>
+                        <p>现在支持持续手势翻页功能！</p>
+                        <p>保持👍或👎手势，幻灯片会自动连续翻页。</p>
+                        <p>尝试保持点赞手势超过2秒钟，看看效果。</p>
                     </div>
                 </div>
 
@@ -471,6 +525,7 @@
                         <p>👎 点踩手势：返回上一页</p>
                         <p>☝️ 食指向下：跳转到第一页</p>
                         <p>🤟 我爱你手势：跳转到最后一页</p>
+                        <p>保持手势：自动连续翻页</p>
                     </div>
                 </div>
 
@@ -504,10 +559,12 @@
 
             <div class="nav-buttons">
                 <button id="prevButton" class="nav-btn">
-                    <i class="material-icons">navigate_before</i> 上一页
+                    <i class="material-icons">navigate_before</i>
+                    <span>上一页</span>
                 </button>
                 <button id="nextButton" class="nav-btn">
-                    下一页 <i class="material-icons">navigate_next</i>
+                    <span>下一页</span>
+                    <i class="material-icons">navigate_next</i>
                 </button>
             </div>
         </div>
@@ -546,12 +603,14 @@
                 <div class="gesture-symbol">👍</div>
                 <h3>点赞手势</h3>
                 <p>前进到下一页幻灯片</p>
+                <p><small>保持手势自动连续翻页</small></p>
             </div>
 
             <div class="gesture-card">
                 <div class="gesture-symbol">👎</div>
                 <h3>点踩手势</h3>
                 <p>返回上一页幻灯片</p>
+                <p><small>保持手势自动连续翻页</small></p>
             </div>
 
             <div class="gesture-card">
@@ -569,7 +628,7 @@
     </div>
 
     <footer>
-        <p>手势控制幻灯片系统 | 基于MediaPipe手势识别技术 | 高性能优化版</p>
+        <p>手势控制幻灯片系统 | 持续手势翻页功能 | 基于MediaPipe手势识别技术</p>
     </footer>
 
     <script type="module">
@@ -582,7 +641,6 @@
         // DOM元素引用
         const gestureOutput = document.getElementById("gesture_output");
         const webcamButton = document.getElementById("webcamButton");
-        const slideshow = document.querySelector(".slideshow");
         const slides = document.querySelectorAll('.slide');
         const indicators = document.querySelectorAll('.indicator');
         const currentSlideElement = document.getElementById("currentSlide");
@@ -591,6 +649,7 @@
         const cameraPlaceholder = document.getElementById("cameraPlaceholder");
         const prevButton = document.getElementById("prevButton");
         const nextButton = document.getElementById("nextButton");
+        const continuousIndicator = document.getElementById("continuousIndicator");
 
         // 全局变量
         let gestureRecognizer;
@@ -598,6 +657,9 @@
         let lastGesture = "";
         let currentSlide = 0;
         let lastDetectionTime = 0;
+        let continuousMode = null;
+        let gestureHoldStart = 0;
+        let continuousInterval = null;
 
         // 初始化幻灯片
         totalSlidesElement.textContent = slides.length;
@@ -670,6 +732,7 @@
                 // 关闭摄像头
                 stopWebcam();
                 webcamButton.innerHTML = '<i class="material-icons">videocam</i> 启用摄像头';
+                stopContinuousMode(); // 确保停止连续模式
             } else {
                 // 启用摄像头
                 try {
@@ -732,6 +795,43 @@
                 <div class="gesture-name">摄像头已关闭</div>
                 <div class="gesture-desc">点击按钮重新启用</div>
             `;
+            stopContinuousMode(); // 确保停止连续模式
+        }
+
+        // 停止连续翻页模式
+        function stopContinuousMode() {
+            if (continuousInterval) {
+                clearInterval(continuousInterval);
+                continuousInterval = null;
+            }
+            continuousIndicator.classList.remove('active');
+            continuousMode = null;
+        }
+
+        // 开始连续翻页模式
+        function startContinuousMode(direction) {
+            if (continuousMode === direction) return;
+
+            stopContinuousMode(); // 先停止任何现有的连续模式
+
+            continuousMode = direction;
+            continuousIndicator.classList.add('active');
+
+            // 立即执行一次翻页
+            if (direction === 'next') {
+                goToSlide(currentSlide + 1);
+            } else {
+                goToSlide(currentSlide - 1);
+            }
+
+            // 设置连续翻页的间隔
+            continuousInterval = setInterval(() => {
+                if (direction === 'next') {
+                    goToSlide(currentSlide + 1);
+                } else {
+                    goToSlide(currentSlide - 1);
+                }
+            }, 1500); // 每1500毫秒翻页一次
         }
 
         // 预测摄像头画面
@@ -765,6 +865,16 @@
                     if (lastGesture !== categoryName) {
                         handleGestureInteraction(categoryName);
                         lastGesture = categoryName;
+                        gestureHoldStart = now; // 记录手势开始时间
+                    } else {
+                        // 如果手势保持超过2秒，则启动连续模式
+                        if (now - gestureHoldStart > 2000) {
+                            if (categoryName === "Thumb_Up") {
+                                startContinuousMode('next');
+                            } else if (categoryName === "Thumb_Down") {
+                                startContinuousMode('prev');
+                            }
+                        }
                     }
                 } else {
                     gestureOutput.innerHTML = `
@@ -772,6 +882,7 @@
                         <div class="gesture-desc">请将手放在摄像头前</div>
                     `;
                     lastGesture = "";
+                    stopContinuousMode(); // 停止连续模式
                 }
             } catch (error) {
                 console.error("手势识别错误:", error);
@@ -779,6 +890,7 @@
                     <div class="gesture-name">识别出错</div>
                     <div class="gesture-desc">请重试</div>
                 `;
+                stopContinuousMode(); // 停止连续模式
             }
 
             // 继续处理
@@ -787,6 +899,9 @@
 
         // 处理手势交互
         function handleGestureInteraction(gesture) {
+            // 停止之前的连续模式
+            stopContinuousMode();
+
             switch (gesture) {
                 case "Thumb_Up": // 点赞手势 - 下一页
                     goToSlide(currentSlide + 1);
@@ -851,14 +966,13 @@
                 index = 0;
             }
 
+
             // 更新当前幻灯片索引
             currentSlide = index;
 
             // 更新幻灯片位置和指示器
             updateSlidePositions();
 
-            // 显示导航效果
-            showGestureEffect(index > currentSlide ? '▶' : '◀');
         }
 
         // 初始化手势识别器
